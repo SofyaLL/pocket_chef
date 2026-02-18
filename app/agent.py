@@ -1,10 +1,9 @@
 import logging
-from pathlib import Path
 from langchain.agents import create_agent
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
-
+from app.schemas.schemas import AgentResponse
 from app.settings import get_settings
 
 logger = logging.getLogger("uvicorn.error")
@@ -42,17 +41,8 @@ model = ChatGoogleGenerativeAI(
 
 class Agent:
     async def setup(self):
-        BASE_DIR = Path(__file__).resolve().parent.parent
-        path_mcp = BASE_DIR / "mcp_server.py"
-        logger.info(path_mcp)
         client = MultiServerMCPClient(
-            {
-                "chef_mcp": {
-                    "transport": "stdio",
-                    "command": "python",
-                    "args": [str(path_mcp)],
-                }
-            }
+            {"chef_mcp": {"transport": "http", "url": str(settings.mcp_url)}}
         )
         tools = await client.get_tools()
         self.agent = create_agent(model, tools=tools, system_prompt=system_prompt)
@@ -61,10 +51,11 @@ class Agent:
 
     async def pipeline(self, input_text: str):
         messages = {"messages": [{"role": "user", "content": input_text}]}
+        # config: RunnableConfig = {"configurable": {"thread_id": "1"}}
         result = await self.agent.ainvoke(messages)
         messages = result["messages"]
         last_ai = next(
             m for m in reversed(messages) if getattr(m, "type", None) == "ai"
         )
         final_text = last_ai.text
-        return final_text
+        return AgentResponse(content=final_text)

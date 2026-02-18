@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_DATABASE}
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+
+  mcp_server:
+    build: ./mcp_server
+    ports:
+      - 9000:9000
+
+volumes:
+  dbdata:

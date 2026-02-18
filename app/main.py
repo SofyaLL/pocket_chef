@@ -7,8 +7,22 @@ from fastapi.responses import RedirectResponse
 
 from app.settings import Settings, get_settings
 from app.agent import Agent
+from app.schemas.schemas import UserQuestion, AgentResponse
 
 logger = logging.getLogger("uvicorn.error")
+
+# DB_URI = "postgresql://postgres:postgres@localhost:5432/postgres?sslmode=disable"
+
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     with PostgresSaver.from_conn_string(DB_URI) as checkpointer:
+#         checkpointer.setup()
+#         agent = Agent()
+#         await agent.setup(checkpointer)
+#         app.state.agent = agent
+#         logger.info("Application startup complete")
+#         yield
+#         logger.info("Application shutdown")
 
 
 @asynccontextmanager
@@ -29,11 +43,13 @@ async def root():
     return RedirectResponse("/docs")
 
 
-@app.post("/chat")
-async def chat(input_data, settings: Annotated[Settings, Depends(get_settings)]):
+@app.post("/chat", response_model=AgentResponse)
+async def chat(
+    input_data: UserQuestion, settings: Annotated[Settings, Depends(get_settings)]
+):
     try:
-        logger.info(f"Question {settings.model_name}: '{input_data}'")
-        response = await app.state.agent.pipeline(input_data)
+        logger.info(f"Question {settings.model_name}: '{input_data.content}'")
+        response = await app.state.agent.pipeline(input_data.content)
         logger.info(f"Response: '{response}'")
         return response
     except Exception as e:

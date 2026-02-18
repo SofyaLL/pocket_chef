@@ -1,12 +1,11 @@
-from pathlib import Path
 from fastmcp import FastMCP
 import pandas as pd
 
 
 mcp = FastMCP(name="ChefMCP")
 
-BASE_DIR = Path(__file__).resolve().parent
-csv_path = BASE_DIR / "data" / "Recipes_en.csv"
+
+csv_path = "Recipes_en.csv"
 recipes_df = pd.read_csv(csv_path)
 recipes_df["ingredients"] = recipes_df["ingredients"].apply(
     lambda x: (
@@ -33,4 +32,4 @@ def get_ingridients(recipe: str) -> list[str]:
 
 
 if __name__ == "__main__":
-    mcp.run()
+    mcp.run(transport="http", host="0.0.0.0", port=9000)
